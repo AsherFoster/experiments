@@ -22,7 +22,7 @@ function html() {
 function js() {
   return src('src/**/*.js', {base: 'src'})
     .pipe(babel({
-      presets: ['@babel/preset-env']
+      presets: ['@babel/preset-env', 'minify']
     }))
     .pipe(dest(OUTPUT_DIR))
 }
