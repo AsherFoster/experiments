@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script type="text/javascript">
+            var out,
+                chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()-=+_{}[]:";\'?>/.,|';
+            window.onload = function(){
+                out = document.getElementsByTagName("div")[0];
+                out.onclick = select;
+            }
+            function select() {
+                var selection = window.getSelection(),
+                    range = document.createRange();
+                range.selectNodeContents(out);
+                selection.removeAllRanges();
+                selection.addRange(range);
+            }
+            setInterval(function(){
+                if(out.parentElement.querySelector(':hover') !== out)
+                    out.innerText = (function(){
+                        var result = '';
+                        for (var i = 25; i > 0; --i) result += chars[Math.floor(Math.random() * chars.length)];
+                        return result
+                    })()
+            }, 10);
+        </script>
+        <style>
+            html, body{
+                margin: 0;
+                background: #24586B
+            }
+            div{
+                font-family: monospace, sans-serif;
+                position: relative;
+                color: #FFF;
+                text-align: center;
+                top: 45vh;
+                font-size: 10vh
+            }
+        </style>
+    </head>
+    <body>
+        <div>Loading...</div>
+    </body>
+</html>

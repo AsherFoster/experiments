@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Developster 404</title>
+    <style>
+      html, body {
+        margin: 0;
+        overflow: hidden;
+      }
+
+      #background-wrapper{
+        height: 100vh;
+        width: 100vw;
+      }
+
+      .falling-unicorn{
+        position: absolute;
+        -webkit-transition-property: top;
+        -moz-transition-property: top;
+        transition-property: top;
+        -webkit-transition-timing-function: ease-in;
+        -moz-transition-timing-function: ease-in;
+        transition-timing-function: ease-in;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="background-wrapper"></div>
+    <script>
+      // Constants
+      const maxUnicornSize = 250;
+      const spawnInterval = 200;
+      const fallSpeed = 2000;
+
+      const wrapper = document.getElementById("background-wrapper");
+      let masterUnicorn = document.createElement("img"); // Obey the Master Unicorn, or else
+      masterUnicorn.className = "falling-unicorn";
+      masterUnicorn.src = "/assets/img/unicorn.png";
+
+      const docWidth = document.body.clientWidth;
+      const docHeight = document.body.clientHeight;
+
+      function generateUnicorn(){
+        const unicorn = masterUnicorn.cloneNode(false);
+        const size = random(maxUnicornSize, 30);
+
+        unicorn.style.top = -size + "px";
+        unicorn.style.width = size + "px";
+        unicorn.style.height = size + "px";
+        unicorn.style.left = (random(docWidth, size) - size) + "px";
+        unicorn.style.transitionDuration = fallSpeed + 'ms';
+        unicorn.style.mozTransitionDuration = fallSpeed + 'ms';
+        unicorn.style.webkitTransitionDuration = fallSpeed + 'ms';
+
+        wrapper.appendChild(unicorn);
+
+        setTimeout(function(){
+          unicorn.style.top = '100vh';
+          setTimeout(() => {
+            wrapper.removeChild(unicorn);
+          }, fallSpeed);
+        }, 10)
+      }
+
+      function random(max, min){
+        if(min)
+          return Math.floor(Math.random() * (max - min)) + min;
+        else
+          return Math.floor(Math.random() * max);
+      }
+
+
+      // Start the loop
+      setInterval(generateUnicorn, spawnInterval);
+    </script>
+  </body>
+</html>

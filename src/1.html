@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>DS Slider</title>
+        <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.8/angular.min.js"></script>
+        <style>
+            *{
+                font-family: "Arial", sans-serif;
+                position: relative;
+            }
+            html, body{
+                margin: 0;
+                background: #FFF;
+                color: #000;
+                width: 100%;
+                height: 100%;
+            }
+            .sp{
+                text-align: right;
+                display: inline-block;
+                width: 50%;
+/*
+                padding-right: 0.2%;
+                border-right: 2px solid #DDD;
+*/
+            }
+            #sec-st{
+                display: inline-block;
+                width: 49%;
+                transition: top 0.2s;
+                vertical-align: top;
+                font-size: 2em;
+            }
+            .sp-i{
+                display: block;
+                cursor: pointer;
+            }
+            .sp-is{
+                color: #FEBC01;
+                font-size: 2em;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="sp">
+            <span class="sp-i" id="3" data-type="art">Art</span>
+            <span class="sp-i" id="2">Music</span>
+            <span class="sp-i" id="1">Develop</span>
+            <span class="sp-i" id="4">Design</span>
+            <span class="sp-i" id="5">Hip</span>
+        </div>
+        <div id="sec-st">ster</div>
+        <script>
+            var d = document, list = [].slice.call(d.getElementsByClassName("sp-i"));
+            list.forEach(function(item){
+                item.onclick = function(){
+                    [].slice.call(d.getElementsByClassName("sp-is")).forEach(function(item){
+                        item.classList.remove("sp-is");
+                    });
+                    item.classList.add("sp-is");
+                    d.getElementById("sec-st").style.top = item.getBoundingClientRect().top+"px";
+                }
+            })
+            list[2].onclick()
+        </script>
+    </body>
+</html>

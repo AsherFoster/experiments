@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html ng-app="counter">
+    <head>
+        <link href='https://fonts.googleapis.com/css?family=Roboto:400,100' rel='stylesheet' type='text/css'>
+        <style>
+            *{
+                position: relative;
+            }
+            html, body{
+                margin: 0;
+                font-family: "Roboto", sans-serif;
+                height: 100%;
+                width: 100%;
+                text-align: center;
+                color: #FFF;
+            }
+            .player{
+                display: inline-block;
+                height: 85vh;
+                padding-top: 15vh;
+                font-size: 6.5vh;
+            }
+            .health{
+                font-size: 3em;
+            }
+            .change{
+                cursor: pointer;
+            }
+            #fab{
+                z-index: 99;
+                position: absolute;
+                width: 56px;
+                height: 56px;
+                font-size: 36px;
+                font-weight: 100;
+                background: #2196F3;
+                border-radius: 50%;
+                box-shadow: 0 0 4px rgba(0,0,0,.14),0 4px 8px rgba(0,0,0,.28);
+            }
+            #fab:hover{
+                box-shadow: 0 0 6px rgba(0,0,0,.16),0 6px 12px rgba(0,0,0,.32);
+                background: #1E88E5
+            }
+            #fab img{
+                margin-top: 16px;
+                height: 24px;
+                width: 24px;
+            }
+            .close{
+                font-size: 0.4em;
+                top: 3px;
+            }
+        </style>
+        <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.8/angular.min.js"></script>
+        <script>
+            var d = document,
+                colors = [
+                    {
+                        "name":"Red",
+                        "color":"C00"
+                    },
+                    {
+                        "name":"Black",
+                        "color":"333"
+                    },
+                    {
+                        "name":"White",
+                        "color":"EEE",
+                        "text":"000"
+                    },
+                    {
+                        "name":"Green",
+                        "color":"060"
+                    },
+                    {
+                        "name":"Blue",
+                        "color":"06F"
+                    }
+                ],
+                app = angular.module("counter", []),
+                Player = function(){
+                    this.health = 20;
+                    this.name = "Player";
+                    this.color = colors[Object.keys(colors)[Math.floor(Math.random()*5)]];
+                };
+            function reCalc(){
+                d.getElementById("fab").style.left = window.innerWidth - 80 + "px";
+                d.getElementById("fab").style.top = window.innerHeight - 80 + "px";
+            }
+            window.onresize = reCalc;
+            window.onload = reCalc;
+            app.controller("main", function($scope){
+                $scope.colors = colors;
+                $scope.bgCol = $scope.colors[0];
+                $scope.players = [new Player(), new Player()];
+                $scope.addPlayer = function(){
+                    $scope.players.push(new Player());
+                }
+                $scope.changeHealth = function(player, by){
+                    $scope.players[player].health += by;
+                }
+                $scope.random = function(){
+                    return Math.floor(Math.random()*5);
+                }
+                $scope.removePlayer = function(player){
+                    $scope.players.splice(player, 1);
+                }
+            })
+        </script>
+    </head>
+    <body ng-controller="main">
+        <div id="fab" ng-click="addPlayer()"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAAnUlEQVQ4y+3UQQqEMAxA0eImW6F36Dl7Bw+Yo8QqXYgzG60Ygj/wwZXNg9JkZilyCQAAAAD+JiK5VXo5FKAtPB2W3wsHUNXF+vTvUFdott8B8PYrBAAAAAAAAPgDRCS3ytXO29/5x3b2E4DiCCjDAFVdzGn62UOA2fzn24Ct6rh85RkFAAAAAAAAAAAAcKt6WL5GBLwSAAAAAAAYagWVWRoiTY9ZmAAAAABJRU5ErkJggg=="></div>
+        <div ng-repeat="(ind, player) in players" class="player" style="background:#{{bgCol.color}};color:#{{bgCol.text || 'FFF'}};width:{{100/players.length}}%">
+            <div class="change" contenteditable="true">Name</div>
+            <div class="change" ng-click="changeHealth(ind, 10)">+10</div>
+            <div class="change" ng-click="changeHealth(ind, 1)">+1</div>
+            <div class="health">{{player.health}}</div>
+            <div class="change" ng-click="changeHealth(ind, -1)">-1</div>
+            <div class="change" ng-click="changeHealth(ind, -10)">-10</div>
+            <div>
+                <select ng-options="color.name for color in colors track by color.color" ng-model="bgCol" ng-init="bgCol = colors[random()]"></select>
+                <span class="close" ng-click="removePlayer(ind)">X</span>
+            </div>
+        </div>
+    </body>
+</html>

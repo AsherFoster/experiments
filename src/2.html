@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html ng-app="countdown">
+    <head>
+        <title>Year Countdown</title>
+        <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.8/angular.min.js"></script>
+        <script>
+            var app = angular.module('countdown', []), time;
+            app.controller('main', function($scope, $interval){
+                function tick(){
+                    time = (new Date('January 1, '+(new Date().getFullYear()+1) +' 00:00:00').getTime() - new Date().getTime()) / 1000;
+                    $scope.time = time < 10000 ? time.toFixed(3) : (Math.round(time * 10) / 10).toFixed(1);
+                    $scope.year = new Date().getFullYear()+1;
+                }
+                $interval(tick, 1)
+            })
+        </script>
+        <style>
+            html, body{
+                background: #36CAF9;
+                height: 75%;
+                margin: 0;
+                font-family: "Arial";
+                color: #FFF;
+                text-align: center;
+            }
+            div{
+                font-size: 15vw;
+                margin-top: 20%;
+                position: relative;
+            }
+            span{
+                font-size: 2em;
+            }
+        </style>
+    </head>
+    <body ng-controller="main">
+        <div>{{time}}</div>
+        <span>Seconds until {{year}}</span>
+    </body>
+</html>

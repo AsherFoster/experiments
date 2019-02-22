@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Gyro Test</title>
+  </head>
+  <body>
+    <div id="rep">
+      <svg xmlns="http://www.w3.org/2000/svg" width="400px" height="60px" viewBox="0 0 400 60">
+        <rect x="0" y="0" width="360" height="50" fill="#090"></rect>
+        <rect x="180" y="0" id="thing" width="20" height="50" fill="#00F"></rect>
+      </svg>
+      <h1>What is this ugly looking bar?!</h1>
+      <p style="max-width: 600px;">
+        This is a tiny little gyroscope. I built this originally because it turns out that some macbooks have gyroscopes in them!
+        Something to do with the HDD and head crashes or something (I'm writing this years in the future, ok?!)
+        It's quite likely it's just going to look ugly and not do anything for you, because I don't think many desktop devices have
+        gyros anymore
+      </p>
+    </div>
+    <script>
+      var thing = document.getElementById("thing");
+
+      function tilt(pos) {
+        thing.setAttribute("x", 180 - pos[1] * 2);
+        console.log("X: " + pos[0] + "    |   Y" + pos[1])
+      }
+
+      if (window.DeviceOrientationEvent) {
+        window.addEventListener("deviceorientation", function () {
+          tilt([event.beta, event.gamma]);
+        }, true);
+      } else if (window.DeviceMotionEvent) {
+        window.addEventListener('devicemotion', function () {
+          tilt([event.acceleration.x * 2, event.acceleration.y * 2]);
+        }, true);
+      } else {
+        window.addEventListener("MozOrientation", function () {
+          tilt([orientation.x * 50, orientation.y * 50]);
+        }, true);
+      }
+    </script>
+  </body>
+</html>

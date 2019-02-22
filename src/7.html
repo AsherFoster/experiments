@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Physics!</title>
+    <style>
+      #c {
+        background: #000;
+      }
+    </style>
+  </head>
+  <body>
+    <button onclick="stop = !stop; if(!stop){ lastRender = Date.now(); render();}">Pause</button>
+    <canvas id="c" height="500" width="500"></canvas>
+    <script>
+      const GRAVITY = 9.80665; // Yes I got those decimals
+      const QUOTE_ADVANCED_QUOTE_DELTATIME = false;
+      const FALLBACK_DT = 1000/60; // 60fps
+
+      let stop = false;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#FFF';
+
+      const world = [];
+      const gms = GRAVITY / 1000; // Gravity per millisecond
+      let lastRender = 0;
+      let averageDt = 20;
+
+      function render() {
+        ctx.clearRect(0, 0, c.width, c.height);
+        world.forEach(obj => {
+          let dt = Date.now() - lastRender;
+          if(QUOTE_ADVANCED_QUOTE_DELTATIME && dt > 2 * averageDt) {
+            dt = averageDt;
+            averageDt = ((averageDt * 5) + dt)/6; // TODO More reliable correction
+            console.log('Dt? What Dt?')
+          } else if(QUOTE_ADVANCED_QUOTE_DELTATIME) {
+            averageDt = (averageDt + dt)/2;
+          } else if(dt > 10*FALLBACK_DT) {
+            dt = FALLBACK_DT;
+          }
+
+          if(c.height - (obj.pos + obj.vel) < obj.radius) { // It's colliding, respond!
+            let dist = c.height - (obj.pos + obj.radius); // Distance to barrier
+            let impactTime = dist/obj.vel; // Time to barrier
+
+            // impact accell - cont decell
+            obj.vel += gms * (2 * impactTime - dt); // Correct speed
+            obj.vel = -obj.vel; // Reverse speed
+
+            obj.pos = c.height - obj.radius
+          } else {
+            obj.pos += obj.vel;
+            obj.vel += gms * dt; // Gravity.
+          }
+
+          obj.render(obj.pos);
+        });
+
+        // setTimeout(render, 1000);
+        if(!stop) requestAnimationFrame(render);
+        lastRender = Date.now();
+      }
+      function populateBalls() {
+        const DIST = 100;
+
+        const r = 20;
+        const margin = 5;
+        for(let x = margin + r; x < c.width - (margin + r); x += (r*2 + margin)) {
+          world.push({
+            pos: (c.height / 2) - DIST * Math.cos((x * Math.PI) / c.width),
+            vel: 0,
+            radius: 20,
+            render: (y) => {
+              ctx.beginPath();
+              ctx.arc(x,y, 20, 0, Math.PI*2);
+              ctx.fill();
+            }
+          })
+        }
+      }
+      populateBalls();
+      lastRender = Date.now();
+      render();
+    </script>
+  </body>
+</html>

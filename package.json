@@ -1,0 +1,27 @@
+{
+  "name": "experiments",
+  "version": "1.0.0",
+  "description": "Some web experiments",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AsherFoster/experiments.git"
+  },
+  "author": "Asher Foster <me@asherfoster.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/AsherFoster/experiments/issues"
+  },
+  "homepage": "https://github.com/AsherFoster/experiments#readme",
+  "devDependencies": {
+    "@babel/core": "^7.3.3",
+    "@babel/preset-env": "^7.3.1",
+    "del": "^3.0.0",
+    "gulp": "^4.0.0",
+    "gulp-babel": "^8.0.0",
+    "gulp-htmlmin": "^5.0.1"
+  }
+}
