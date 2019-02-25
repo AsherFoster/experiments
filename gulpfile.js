@@ -2,6 +2,7 @@ const  {src, dest, parallel, series, watch} = require('gulp');
 const htmlmin = require('gulp-htmlmin');
 const del = require('del');
 const babel = require('gulp-babel');
+const jsonmin = require('gulp-jsonminify');
 
 const OUTPUT_DIR = 'dist';
 
@@ -27,7 +28,13 @@ function js() {
     .pipe(dest(OUTPUT_DIR))
 }
 
-exports.default = series(clean, parallel(html, js));
+function json() {
+  return src('src/**/*.json', {base: 'src'})
+    .pipe(jsonmin())
+    .pipe(dest(OUTPUT_DIR))
+}
+
+exports.default = series(clean, parallel(html, js, json));
 
 exports.watch = () => watch('src/**/*', exports.default);
 
