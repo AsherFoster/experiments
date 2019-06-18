@@ -31,16 +31,20 @@ const eyeColors = ['#a29bfe', '#74b9ff', '#ff7675', '#fab1a0', '#81ecec', '#55ef
 
       computeSize();
       window.addEventListener('resize', computeSize);
-      window.addEventListener('mousemove', e => {
-        mouseX = e.clientX;
-        mouseY = e.clientY;
+      window.addEventListener('mousemove', mouseEvent);
+      window.addEventListener('dragover', mouseEvent);
+      window.addEventListener('touchstart', e => {
+        mouseEvent(e.changedTouches[0])
       });
-      window.addEventListener('dragover', e => {
-        mouseX = e.clientX;
-        mouseY = e.clientY;
+      window.addEventListener('touchmove', e => {
+        mouseEvent(e.changedTouches[0])
       });
 
 
+      function mouseEvent(e) {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+      }
       function computeSize() {
         let docHeight = document.body.offsetHeight;
         let docWidth = document.body.offsetWidth;
