@@ -47,6 +47,10 @@
         mouseX = e.clientX;
         mouseY = e.clientY;
       });
+      window.addEventListener('dragover', e => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+      });
 
 
       function computeSize() {
