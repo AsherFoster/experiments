@@ -1,0 +1,130 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>👁👁👁</title><style>body {
+        margin: 0;
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        background: lightblue;
+      }
+      #app {
+        margin: auto;
+      }</style></head><body><canvas id="app"></canvas><script>
+const eyeColors = ['#a29bfe', '#74b9ff', '#ff7675', '#fab1a0', '#81ecec', '#55efc4'];      let eyeSize = 120;
+      let eyeMargin = 20;
+
+      let maxDistance = 400;
+
+      const irisRadius = 3/10 * eyeSize;
+      const pupilRadius = 1/6 * eyeSize;
+      const hightlightRadius = 1/16 * eyeSize;
+
+
+      let height = 0;
+      let width = 0;
+      let nX;
+      let nY;
+      let colors = [];
+      let mouseX = 0;
+      let mouseY = 0;
+
+      let canvas = document.getElementById('app');
+      let ctx = canvas.getContext('2d');
+
+      computeSize();
+      window.addEventListener('resize', computeSize);
+      window.addEventListener('mousemove', e => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+      });
+
+
+      function computeSize() {
+        let docHeight = document.body.offsetHeight;
+        let docWidth = document.body.offsetWidth;
+
+        nX = Math.floor((docWidth - eyeMargin)/(eyeSize + eyeMargin));
+        nY = Math.floor((docHeight - eyeMargin)/(eyeSize + eyeMargin));
+
+        height = canvas.height = eyeMargin + (eyeSize + eyeMargin) * nY;
+        width = canvas.width =  eyeMargin + (eyeSize + eyeMargin) * nX;
+        makeColors();
+      }
+      function pickRandom(arr) {
+        return arr[Math.floor(Math.random() * arr.length)];
+      }
+      function makeColors() {
+        colors = Array.from({length: nY}).map((r, i) => {
+          return Array.from({length: nX}, (v, i) => pickRandom(eyeColors))
+        });
+      }
+      function pythagoras3d(x, y, z) {
+        return Math.sqrt(x ** 2 + y ** 2 + z ** 2)
+      }
+      function clamp(val, min, max) {
+        return Math.min(max, Math.max(min, val));
+      }
+
+      function render() {
+        ctx.clearRect(0, 0, width, height);
+        for(let y = 0; y < nY; y++) {
+          for(let x = 0; x < nX; x++) {
+            renderEye(x, y);
+          }
+        }
+        requestAnimationFrame(render)
+      }
+
+      function renderEye(x, y) {
+        let radius = eyeSize/2;
+        let eyeX = x * (eyeSize + eyeMargin) + eyeMargin + radius; // center points
+        let eyeY = y * (eyeSize + eyeMargin) + eyeMargin + radius;
+
+        let mouseDeltaX = clamp(mouseX - eyeX, -maxDistance, maxDistance);
+        let mouseDeltaY = clamp(mouseY - eyeY, -maxDistance, maxDistance);
+
+
+        let depth = 200;
+        let dist = pythagoras3d(mouseDeltaX, mouseDeltaY, depth);
+        let ratio = (radius/1.2)/dist;
+
+        let offsetX = mouseDeltaX * ratio;
+        let offsetY = mouseDeltaY * ratio;
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.ellipse(eyeX, eyeY, radius, radius, 0, 0, 2 * Math.PI);
+        ctx.clip();
+
+        // eye
+        ctx.fillStyle = 'white';
+        ctx.beginPath();
+        ctx.ellipse(eyeX, eyeY, radius, radius, 0, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // iris
+        ctx.fillStyle = colors[y][x];
+        ctx.beginPath();
+        ctx.ellipse(eyeX + offsetX, eyeY + offsetY,
+          irisRadius - Math.abs(3 * offsetX/radius), // width
+          irisRadius - Math.abs(3 * offsetY/radius), // height
+          0, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // pupil
+        ctx.fillStyle = 'black';
+        ctx.beginPath();
+        ctx.ellipse(eyeX + (offsetX * 1.15), eyeY + (offsetY * 1.15),
+          pupilRadius - Math.abs(5 * offsetX/radius), // width
+          pupilRadius - Math.abs(5 * offsetY/radius), // height
+          0, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // highlight
+        ctx.fillStyle = 'white';
+        ctx.beginPath();
+        ctx.ellipse(eyeX + (offsetX * 1.2) + 15, eyeY + (offsetY * 1.2) - 15, hightlightRadius, hightlightRadius, 0, 0, 2 * Math.PI);
+        ctx.fill();
+
+        ctx.restore();
+      }
+
+      render();</script></body></html>
