@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Face Tracking!</title>
+  <style>
+    #overlay {
+      position: absolute;
+      border: 2px solid blue;
+      height: 10px;
+      width: 10px;
+      transition: all 0.3s;
+    }
+  </style>
+</head>
+<body>
+<video id="stream" width="400" height="300" preload autoplay loop muted></video>
+<div id="overlay"></div>
+<script src="assets/face-api.js"></script>
+<script>
+  (async () => {
+    await faceapi.nets.tinyFaceDetector.loadFromUri('assets');
+    const streamElement = document.getElementById('stream');
+    const overlay = document.getElementById('overlay');
+    overlay.style.top = '0px';
+    const detector = new faceapi.TinyFaceDetectorOptions({size: 416});
+    let started = false;
+
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({video: true});
+    } catch (err) {
+      document.write('This app requires access to your webcam');
+      return;
+    }
+    streamElement.srcObject = stream;
+    streamElement.addEventListener('playing', start);
+    function start() {
+      if(started) console.error('Playing, but already started!');
+      started = true;
+      streamElement.height = streamElement.videoHeight;
+      streamElement.width = streamElement.videoWidth;
+      detect();
+    }
+
+    async function detect() {
+      const detection = await faceapi.detectSingleFace(streamElement, detector);
+      if(detection) {
+        // console.log(detection.box)
+        let {box} = detection;
+        console.log(detection);
+        overlay.style.top = box.y + 'px';
+        overlay.style.left = box.x + 'px';
+        overlay.style.height = box.height + 'px';
+        overlay.style.width = box.width + 'px';
+      }
+      setTimeout(detect, 100);
+    }
+  })();
+</script>
+</body>
+</html>
