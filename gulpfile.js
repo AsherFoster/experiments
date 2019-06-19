@@ -35,11 +35,11 @@ function json() {
 }
 
 function assets() {
-  return src('src/assets/**/*')
-    .pipe(dest(OUTPUT_DIR + '/assets'))
+  return src('src/assets/**/*', {base: 'src'})
+    .pipe(dest(OUTPUT_DIR))
 }
 
-exports.default = series(clean, parallel(html, js, json));
+exports.default = series(clean, parallel(html, js, json, assets));
 
 exports.watch = () => watch('src/**/*', exports.default);
 
