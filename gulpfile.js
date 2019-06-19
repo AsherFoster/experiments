@@ -35,8 +35,8 @@ function json() {
 }
 
 function assets() {
-  return src('src/assets')
-    .pipe(dest(OUTPUT_DIR))
+  return src('src/assets/**/*')
+    .pipe(dest(OUTPUT_DIR + '/assets'))
 }
 
 exports.default = series(clean, parallel(html, js, json));
