@@ -21,7 +21,7 @@ function html() {
 }
 
 function js() {
-  return src('src/**/*.js', {base: 'src'})
+  return src(['src/**/*.js', '!src/assets/**/*'], {base: 'src'})
     .pipe(babel({
       presets: ['@babel/preset-env', 'minify']
     }))
@@ -31,6 +31,11 @@ function js() {
 function json() {
   return src('src/**/*.json', {base: 'src'})
     .pipe(jsonmin())
+    .pipe(dest(OUTPUT_DIR))
+}
+
+function assets() {
+  return src('src/assets')
     .pipe(dest(OUTPUT_DIR))
 }
 
