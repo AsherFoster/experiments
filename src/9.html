@@ -33,25 +33,28 @@
     </style>
   </head>
   <body>
-    <!--<video id="stream" width="200" height="150" preload autoplay loop muted></video>-->
-    <img id="stream" src="https://192.168.1.5:8080/video" height="150" width="200">
+    <video id="stream" width="200" height="150" preload autoplay loop muted></video>
+<!--    <img id="stream" src="https://192.168.1.5:8080/video" height="150" width="200">-->
     <div id="overlay"></div>
     <canvas id="app"></canvas>
     <script src="assets/face-api.js"></script>
     <script>
       (async () => {
-        let CONTROL_MODE = 'stream';
+        let CONTROL_MODE = 'webcam';
         // stream: a image handled somewhere else
         // webcam: handle creating a webcam feed
         // mouse: just use the mouse
 
-        const detectInterval = 100;
+        const cameraFov = 40 * (Math.PI / 180); // Rough estimate
+        const humanFaceWidth = 0.20;
+        const detectInterval = 0;
+        const dpi = 110;
 
         const eyeColors = ['#a29bfe', '#74b9ff', '#ff7675', '#fab1a0', '#81ecec', '#55efc4'];
         const eyeSize = 120;
         const eyeMargin = 20;
         const mouseDepth = 200;
-        const maxDistance = 400;
+        const maxDistance = Infinity;
 
         const irisRadius = 3 / 10 * eyeSize;
         const pupilRadius = 1 / 6 * eyeSize;
@@ -75,6 +78,9 @@
           z: 0
         };
         let started = false;
+        // dpi * cm = dpc
+        // * 100 = dpm
+        const pixelsPerMeter = (dpi / 2.56) * 100;
 
         let canvas = document.getElementById('app');
         let ctx = canvas.getContext('2d');
@@ -230,24 +236,40 @@
             overlay.style.height = box.height * scale + 'px';
             overlay.style.width = box.width * scale + 'px';
           }
-          if (USE_FACE && detection)
+          if (detection)
             transformDetection(detection);
           setTimeout(detect, detectInterval);
         }
 
-        function transformDetection({box}) {
-          let scaleX = width / streamElement.videoWidth;
-          let scaleY = height / streamElement.videoHeight;
-          let boxCenterX = box.x + box.width / 2;
-          let boxCenterY = box.y + box.height / 2;
-          let scaledX = width - (scaleX * boxCenterX); // Flip position, mirror webcam
-          let scaledY = boxCenterY * scaleY;
-          let fromCenterX = scaledX - width / 2;
-          let fromCenterY = scaledY - height / 2;
+        function transformDetection({box, imageHeight, imageWidth}) {
+          // Shift above screen
+          // Scale with width/distance
+          // (de)amplify movement
+          let boxY = box.y + box.height/2;
+          let boxX = box.x + box.width/2;
+          let boxCenteredX = -(boxX - imageWidth/2);
+          let boxCenteredY = boxY - imageHeight/2;
+
+          // Calculate depth
+          let faceAngle = cameraFov / (imageWidth/box.width); // Width in radians
+          let distance = humanFaceWidth / Math.tan(faceAngle); // distance in m
+          let distancePx = distance * pixelsPerMeter;
+
+          let fromCenterX = boxCenteredX * 2;
+          let fromCenterY = boxCenteredY * 2;
+          console.log(fromCenterX, fromCenterY);
+          // let scaleX = width / streamElement.videoWidth;
+          // let scaleY = height / streamElement.videoHeight;
+          // let boxCenterX = boxX + box.width / 2;
+          // let boxCenterY = boxY + box.height / 2;
+          // let scaledX = width - (scaleX * boxCenterX); // Flip position, mirror webcam
+          // let scaledY = boxCenterY * scaleY;
+          // let fromCenterX = scaledX - width / 2;
+          // let fromCenterY = scaledY - height / 2;
           dest = {
-            x: width / 2 + fromCenterX * 0.8,
-            y: height / 2 + fromCenterY * 1.5,
-            z: 80000 / box.width
+            x: fromCenterX + width/2,
+            y: fromCenterY,
+            z: distancePx
           };
         }
 
