@@ -53,7 +53,7 @@
 
         const eyeColors = ['#a29bfe', '#74b9ff', '#ff7675', '#fab1a0', '#81ecec', '#55efc4'];
         const eyeMargin = 20;
-        const mouseDepth = 200;
+        const mouseDepth = 300;
         const maxDistanceFactor = 10;
         const irisRadiusFactor = 3 / 5;
         const pupilRadiusFactor = 1 / 3;
@@ -66,9 +66,9 @@
         const cameraFov = fovDeg * Math.PI / 180;
         const detector = new faceapi.TinyFaceDetectorOptions({size: 416});
 
-        // dpi * cm = dpc
-        // * 100 = dpm
-        const pixelsPerMeter = dpi * 2.56 * 100;
+        // dpi -> dpcm
+        // dpcm -> dpm
+        const pixelsPerMeter = (dpi / 2.56) * 100;
         let stream;
         let height = 0;
         let width = 0;
@@ -142,6 +142,7 @@
                 mouseEvent(e.changedTouches[0])
               });
               streamElement.width = 0;
+              overlay.style.display = 'none';
               break;
             case 'webcam':
               initVideo();
@@ -226,8 +227,8 @@
           ctx.fillStyle = color;
           ctx.beginPath();
           ctx.ellipse(eyeX + offsetX, eyeY + offsetY,
-            irisRadius - Math.abs(3 * offsetX/eyeRadius), // width
-            irisRadius - Math.abs(3 * offsetY/eyeRadius), // height
+            irisRadius - Math.abs(offsetX * eyeRadius / 4000), // width
+            irisRadius - Math.abs(offsetY * eyeRadius / 4000), // height
             0, 0, 2 * Math.PI);
           ctx.fill();
 
@@ -235,8 +236,8 @@
           ctx.fillStyle = 'black';
           ctx.beginPath();
           ctx.ellipse(eyeX + (offsetX * 1.15), eyeY + (offsetY * 1.15),
-            pupilRadius - Math.abs(5 * offsetX/eyeRadius), // width
-            pupilRadius - Math.abs(5 * offsetY/eyeRadius), // height
+            pupilRadius - Math.abs(offsetX * eyeRadius / 3000), // width
+            pupilRadius - Math.abs(offsetY * eyeRadius / 3000), // height
             0, 0, 2 * Math.PI);
           ctx.fill();
 
@@ -249,7 +250,8 @@
           ctx.restore();
 
           if(DEBUG) {
-            dot(eyeX, eyeY)
+            dot(eyeX, eyeY);
+            dot(eyeX + offsetX, eyeY + offsetY, 2, '#F00')
           }
         }
         function dot(x, y, size = 2, color = '#00F') {
@@ -262,7 +264,7 @@
           dot(dest.x, dest.y, 5);
           `Dest: ${Math.round(dest.x)}, ${Math.round(dest.y)}, ${Math.round(dest.z)}
           Document: ${width} x ${height}
-          DPI: ${dpi}, display is ${pixelsPerMeter * width / 100}cm wide
+          DPI: ${dpi} (${pixelsPerMeter}px/m), display is ${pixelsPerMeter * width / 100}cm wide
           FOV: ${fovDeg} degrees
           Using device config: ${configId}`
               .split('\n').forEach((l, i) => {
