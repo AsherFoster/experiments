@@ -5,134 +5,259 @@
         align-items: center;
         background: lightblue;
       }
+
       #app {
         margin: auto;
-      }</style></head><body><canvas id="app"></canvas><script>
-const eyeColors = ['#a29bfe', '#74b9ff', '#ff7675', '#fab1a0', '#81ecec', '#55efc4'];      let eyeSize = 120;
-      let eyeMargin = 20;
-
-      let maxDistance = 400;
-
-      const irisRadius = 3/10 * eyeSize;
-      const pupilRadius = 1/6 * eyeSize;
-      const hightlightRadius = 1/16 * eyeSize;
-
-
-      let height = 0;
-      let width = 0;
-      let nX;
-      let nY;
-      let colors = [];
-      let mouseX = 0;
-      let mouseY = 0;
-
-      let canvas = document.getElementById('app');
-      let ctx = canvas.getContext('2d');
-
-      computeSize();
-      window.addEventListener('resize', computeSize);
-      window.addEventListener('mousemove', mouseEvent);
-      window.addEventListener('dragover', mouseEvent);
-      window.addEventListener('touchstart', e => {
-        mouseEvent(e.changedTouches[0])
-      });
-      window.addEventListener('touchmove', e => {
-        mouseEvent(e.changedTouches[0])
-      });
-
-
-      function mouseEvent(e) {
-        mouseX = e.clientX;
-        mouseY = e.clientY;
-      }
-      function computeSize() {
-        let docHeight = document.body.offsetHeight;
-        let docWidth = document.body.offsetWidth;
-
-        nX = Math.floor((docWidth - eyeMargin)/(eyeSize + eyeMargin));
-        nY = Math.floor((docHeight - eyeMargin)/(eyeSize + eyeMargin));
-
-        height = canvas.height = eyeMargin + (eyeSize + eyeMargin) * nY;
-        width = canvas.width =  eyeMargin + (eyeSize + eyeMargin) * nX;
-        makeColors();
-      }
-      function pickRandom(arr) {
-        return arr[Math.floor(Math.random() * arr.length)];
-      }
-      function makeColors() {
-        colors = Array.from({length: nY}).map((r, i) => {
-          return Array.from({length: nX}, (v, i) => pickRandom(eyeColors))
-        });
-      }
-      function pythagoras3d(x, y, z) {
-        return Math.sqrt(x ** 2 + y ** 2 + z ** 2)
-      }
-      function clamp(val, min, max) {
-        return Math.min(max, Math.max(min, val));
       }
 
-      function render() {
-        ctx.clearRect(0, 0, width, height);
-        for(let y = 0; y < nY; y++) {
-          for(let x = 0; x < nX; x++) {
-            renderEye(x, y);
+      #stream {
+        /*visibility: hidden;*/
+        position: absolute;
+        top: 0;
+        left: 0;
+      }
+
+      #overlay {
+        position: absolute;
+        border: 2px solid blue;
+        height: 10px;
+        width: 10px;
+        transition: all 0.3s;
+      }</style></head><body><video id="stream" width="200" height="150" preload autoplay loop muted></video><div 
+id="overlay"></div><canvas id="app"></canvas><script src="assets/face-api.js"></script><script>(async () => {
+        let CONTROL_MODE = 'webcam';
+        // stream: a image handled somewhere else
+        // webcam: handle creating a webcam feed
+        // mouse: just use the mouse
+
+        const cameraFov = 40 * (Math.PI / 180); // Rough estimate
+        const humanFaceWidth = 0.20;
+        const detectInterval = 0;
+        const dpi = 110;
+
+        const eyeColors = ['#a29bfe', '#74b9ff', '#ff7675', '#fab1a0', '#81ecec', '#55efc4'];
+        const eyeSize = 120;
+        const eyeMargin = 20;
+        const mouseDepth = 200;
+        const maxDistance = Infinity;
+
+        const irisRadius = 3 / 10 * eyeSize;
+        const pupilRadius = 1 / 6 * eyeSize;
+        const highlightRadius = 1 / 16 * eyeSize;
+
+        const streamElement = document.getElementById('stream');
+        const overlay = document.getElementById('overlay');
+
+        await faceapi.nets.tinyFaceDetector.loadFromUri('assets');
+        const detector = new faceapi.TinyFaceDetectorOptions({size: 416});
+        let stream;
+        const radius = eyeSize / 2;
+        let height = 0;
+        let width = 0;
+        let nX;
+        let nY;
+        let colors = [];
+        let dest = {
+          x: 0,
+          y: 0,
+          z: 0
+        };
+        let started = false;
+        // dpi * cm = dpc
+        // * 100 = dpm
+        const pixelsPerMeter = (dpi / 2.56) * 100;
+
+        let canvas = document.getElementById('app');
+        let ctx = canvas.getContext('2d');
+
+        computeSize();
+        window.addEventListener('resize', computeSize);
+
+        // App fns
+        function initControl() {
+          switch (CONTROL_MODE) {
+            case 'mouse':
+              window.addEventListener('mousemove', mouseEvent);
+              window.addEventListener('dragover', mouseEvent);
+              window.addEventListener('touchstart', e => {
+                mouseEvent(e.changedTouches[0])
+              });
+              window.addEventListener('touchmove', e => {
+                mouseEvent(e.changedTouches[0])
+              });
+              break;
+            case 'webcam':
+              initVideo();
+              break;
+            case 'stream':
+              streamStart();
+              break;
+            default:
+              console.error(`Unknown control mode ${CONTROL_MODE}, falling back to mouse`);
+              CONTROL_MODE = 'mouse';
+              initControl(); // Eh, just run it again.
           }
         }
-        requestAnimationFrame(render)
-      }
+        async function initVideo() {
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({video: true});
+            console.log('Successfully obtained video stream')
+          } catch (err) {
+            console.log('Failed to get webcam, falling back to mouse');
+            CONTROL_MODE = 'mouse';
+            initControl();
+          }
+          streamElement.srcObject = stream;
+          streamElement.addEventListener('playing', streamStart);
+        }
+        function streamStart() {
+          if(started) console.error('Playing, but already started!');
+          started = true;
+          detect();
+        }
+        function mouseEvent(e) {
+          dest.x = e.clientX;
+          dest.y = e.clientY;
+          dest.z = mouseDepth;
+        }
+        function computeSize() {
+          let docHeight = document.body.offsetHeight;
+          let docWidth = document.body.offsetWidth;
 
-      function renderEye(x, y) {
-        let radius = eyeSize/2;
-        let eyeX = x * (eyeSize + eyeMargin) + eyeMargin + radius; // center points
-        let eyeY = y * (eyeSize + eyeMargin) + eyeMargin + radius;
+          nX = Math.floor((docWidth - eyeMargin) / (eyeSize + eyeMargin));
+          nY = Math.floor((docHeight - eyeMargin) / (eyeSize + eyeMargin));
 
-        let mouseDeltaX = clamp(mouseX - eyeX, -maxDistance, maxDistance);
-        let mouseDeltaY = clamp(mouseY - eyeY, -maxDistance, maxDistance);
+          height = canvas.height = eyeMargin + (eyeSize + eyeMargin) * nY;
+          width = canvas.width = eyeMargin + (eyeSize + eyeMargin) * nX;
+          makeColors();
+        }
+        function makeColors() {
+          colors = Array.from({length: nY}).map((r, i) => {
+            return Array.from({length: nX}, (v, i) => pickRandom(eyeColors))
+          });
+        }
 
+        // Generic Utils
+        function pickRandom(arr) {
+          return arr[Math.floor(Math.random() * arr.length)];
+        }
+        function pythagoras3d(x, y, z) {
+          return Math.sqrt(x ** 2 + y ** 2 + z ** 2)
+        }
+        function clamp(val, min, max) {
+          return Math.min(max, Math.max(min, val));
+        }
 
-        let depth = 200;
-        let dist = pythagoras3d(mouseDeltaX, mouseDeltaY, depth);
-        let ratio = (radius/1.2)/dist;
+        function render() {
+          ctx.clearRect(0, 0, width, height);
+          for (let y = 0; y < nY; y++) {
+            for (let x = 0; x < nX; x++) {
+              renderEye(x, y);
+            }
+          }
+          requestAnimationFrame(render)
+        }
 
-        let offsetX = mouseDeltaX * ratio;
-        let offsetY = mouseDeltaY * ratio;
+        function renderEye(x, y) {
+          let eyeX = x * (eyeSize + eyeMargin) + eyeMargin + radius; // center points
+          let eyeY = y * (eyeSize + eyeMargin) + eyeMargin + radius;
 
-        ctx.save();
-        ctx.beginPath();
-        ctx.ellipse(eyeX, eyeY, radius, radius, 0, 0, 2 * Math.PI);
-        ctx.clip();
+          let deltaX = clamp(dest.x - eyeX, -maxDistance, maxDistance);
+          let deltaY = clamp(dest.y - eyeY, -maxDistance, maxDistance);
 
-        // eye
-        ctx.fillStyle = 'white';
-        ctx.beginPath();
-        ctx.ellipse(eyeX, eyeY, radius, radius, 0, 0, 2 * Math.PI);
-        ctx.fill();
+          let dist = pythagoras3d(deltaX, deltaY, dest.z);
+          let ratio = (radius / 1.2) / dist;
 
-        // iris
-        ctx.fillStyle = colors[y][x];
-        ctx.beginPath();
-        ctx.ellipse(eyeX + offsetX, eyeY + offsetY,
-          irisRadius - Math.abs(3 * offsetX/radius), // width
-          irisRadius - Math.abs(3 * offsetY/radius), // height
-          0, 0, 2 * Math.PI);
-        ctx.fill();
+          let offsetX = deltaX * ratio;
+          let offsetY = deltaY * ratio;
 
-        // pupil
-        ctx.fillStyle = 'black';
-        ctx.beginPath();
-        ctx.ellipse(eyeX + (offsetX * 1.15), eyeY + (offsetY * 1.15),
-          pupilRadius - Math.abs(5 * offsetX/radius), // width
-          pupilRadius - Math.abs(5 * offsetY/radius), // height
-          0, 0, 2 * Math.PI);
-        ctx.fill();
+          // clip to eye area
+          ctx.save();
+          ctx.beginPath();
+          ctx.ellipse(eyeX, eyeY, radius, radius, 0, 0, 2 * Math.PI);
+          ctx.clip();
 
-        // highlight
-        ctx.fillStyle = 'white';
-        ctx.beginPath();
-        ctx.ellipse(eyeX + (offsetX * 1.2) + 15, eyeY + (offsetY * 1.2) - 15, hightlightRadius, hightlightRadius, 0, 0, 2 * Math.PI);
-        ctx.fill();
+          // eye
+          ctx.fillStyle = 'white';
+          ctx.beginPath();
+          ctx.ellipse(eyeX, eyeY, radius, radius, 0, 0, 2 * Math.PI);
+          ctx.fill();
 
-        ctx.restore();
-      }
+          // iris
+          ctx.fillStyle = colors[y][x];
+          ctx.beginPath();
+          ctx.ellipse(eyeX + offsetX, eyeY + offsetY,
+            irisRadius - Math.abs(3 * offsetX/radius), // width
+            irisRadius - Math.abs(3 * offsetY/radius), // height
+            0, 0, 2 * Math.PI);
+          ctx.fill();
 
-      render();</script></body></html>
+          // pupil
+          ctx.fillStyle = 'black';
+          ctx.beginPath();
+          ctx.ellipse(eyeX + (offsetX * 1.15), eyeY + (offsetY * 1.15),
+            pupilRadius - Math.abs(5 * offsetX/radius), // width
+            pupilRadius - Math.abs(5 * offsetY/radius), // height
+            0, 0, 2 * Math.PI);
+          ctx.fill();
+
+          // highlight
+          ctx.fillStyle = 'white';
+          ctx.beginPath();
+          ctx.ellipse(eyeX + (offsetX * 1.2) + 15, eyeY + (offsetY * 1.2) - 15, highlightRadius, highlightRadius, 0, 0, 2 * Math.PI);
+          ctx.fill();
+
+          ctx.restore();
+        }
+
+        async function detect() {
+          const detection = await faceapi.detectSingleFace(streamElement, detector);
+          if (detection) {
+            // console.log(detection.box)
+            let {box} = detection;
+            let scale = streamElement.width / streamElement.videoWidth;
+            overlay.style.top = box.y * scale + 'px';
+            overlay.style.left = box.x * scale + 'px';
+            overlay.style.height = box.height * scale + 'px';
+            overlay.style.width = box.width * scale + 'px';
+          }
+          if (detection)
+            transformDetection(detection);
+          setTimeout(detect, detectInterval);
+        }
+
+        function transformDetection({box, imageHeight, imageWidth}) {
+          // Shift above screen
+          // Scale with width/distance
+          // (de)amplify movement
+          let boxY = box.y + box.height/2;
+          let boxX = box.x + box.width/2;
+          let boxCenteredX = -(boxX - imageWidth/2);
+          let boxCenteredY = boxY - imageHeight/2;
+
+          // Calculate depth
+          let faceAngle = cameraFov / (imageWidth/box.width); // Width in radians
+          let distance = humanFaceWidth / Math.tan(faceAngle); // distance in m
+          let distancePx = distance * pixelsPerMeter;
+
+          let fromCenterX = boxCenteredX * 2;
+          let fromCenterY = boxCenteredY * 2;
+          console.log(fromCenterX, fromCenterY);
+          // let scaleX = width / streamElement.videoWidth;
+          // let scaleY = height / streamElement.videoHeight;
+          // let boxCenterX = boxX + box.width / 2;
+          // let boxCenterY = boxY + box.height / 2;
+          // let scaledX = width - (scaleX * boxCenterX); // Flip position, mirror webcam
+          // let scaledY = boxCenterY * scaleY;
+          // let fromCenterX = scaledX - width / 2;
+          // let fromCenterY = scaledY - height / 2;
+          dest = {
+            x: fromCenterX + width/2,
+            y: fromCenterY,
+            z: distancePx
+          };
+        }
+
+        render();
+        initControl();
+      })();</script></body></html>
