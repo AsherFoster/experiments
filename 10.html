@@ -5,7 +5,7 @@
       width: 10px;
       transition: all 0.3s;
     }</style></head><body><video id="stream" width="400" height="300" preload autoplay loop muted></video><div 
-id="overlay"></div><script src="assets/face-api.js"></script><script>(async () => {
+id="overlay"></div><script src="assets/face_api.js"></script><script>(async () => {
     await faceapi.nets.tinyFaceDetector.loadFromUri('assets');
     const streamElement = document.getElementById('stream');
     const overlay = document.getElementById('overlay');
