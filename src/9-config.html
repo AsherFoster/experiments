@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Eyes Config</title>
+    <script src="//cdn.jsdelivr.net/npm/vue"></script>
+    <style>
+      html, body {
+        height: 100vh;
+        width: 100vw;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <h1>{{title}}</h1>
+      <p>ID: <input type="text" v-model="id"></p>
+      <p>Device is <input type="number" v-model="device.width"> x <input type="number" v-model="device.height">. DPI is {{dpi}}</p>
+      <p>Screen size: <input type="number" v-model="deviceInches"> inches</p>
+      <p>Camera FOV: <input type="number" v-model="fov"> degrees</p>
+      <button @click="save">Save Config</button>
+      <code>
+        {{config | json}}
+      </code>
+      <ul>
+        <li v-for="preset in presets"><a @click="applyConfig(preset)" href="#">{{preset.id}}</a></li>
+      </ul>
+    </div>
+    <script>
+      (async () => {
+        let app = new Vue({
+          el: '#app',
+          data: {
+            title: 'Configure Eyes!',
+            id: 'new-device',
+            deviceInches: 1,
+            device: {
+              width: document.body.offsetWidth,
+              height: document.body.offsetHeight,
+              physicalWidth: 1,
+              physicalHeight: 1
+            },
+            fov: 50,
+            presets: []
+          },
+          methods: {
+            handleResize() {
+              this.device.width = document.body.offsetWidth;
+              this.device.height = document.body.offsetHeight;
+            },
+            save() {
+              localStorage.setItem('eyes-config', JSON.stringify(this.config));
+            },
+            applyConfig(config) {
+              this.fov = config.fov;
+              this.id = config.id;
+              this.deviceInches = Math.round(((document.body.offsetWidth ** 2 + document.body.offsetHeight ** 2) ** 0.5) / config.dpi);
+            }
+          },
+          computed: {
+            dpi() {
+              return Math.round(Math.sqrt(this.device.width ** 2 + this.device.height ** 2) / this.deviceInches)
+            },
+            config() {
+              return {
+                id: this.id,
+                dpi: this.dpi,
+                fov: this.fov,
+              }
+            }
+          },
+          watch: {
+            dpi: function() {
+              this.device.physicalWidth = this.device.width / this.dpi * 25.6;
+              this.device.physicalHeight = this.device.height / this.dpi * 25.6;
+            }
+          },
+          filters: {
+            json(t) {
+              return JSON.stringify(t, null, 2)
+            }
+          }
+        });
+        if(localStorage.getItem('eyes-config') ) app.applyConfig(JSON.parse(localStorage.getItem('eyes-config')));
+        else app.applyConfig({
+          dpi: 80,
+          fov: 50
+        });
+        window.addEventListener('resize', app.handleResize);
+        let resp = await fetch('https://gist.githubusercontent.com/AsherFoster/d6476c97c9a68bd8a66f0224119b408b/raw/eyes-devices.json');
+        app.presets = await resp.json();
+      })()
+    </script>
+  </body>
+</html>
