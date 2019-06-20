@@ -1,6 +1,9 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>👁👁👁</title><style>body {
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>👁👁👁</title><style>html, body {
+        /* Fixes scrolling issues in mobile browsers */
+        height: 100%;
+      }
+      body {
         margin: 0;
-        height: 100vh;
         display: flex;
         align-items: center;
         background: lightblue;
@@ -25,15 +28,14 @@
         transition: all 0.3s;
       }</style></head><body><video id="stream" width="200" height="150" preload autoplay loop muted></video><div 
 id="overlay"></div><canvas id="app"></canvas><script src="assets/face_api.js"></script><script>(async () => {
-        let DEBUG = false;
+        let {debug: DEBUG, layoutMode: LAYOUT_MODE} = localStorage.getItem('eyes-settings') ?
+          JSON.parse(localStorage.getItem('eyes-settings')) :
+          {debug: false, layoutMode: 'big'};
+
         let CONTROL_MODE = 'webcam';
         // stream: a image handled somewhere else
         // webcam: handle creating a webcam feed
         // mouse: just use the mouse
-        let LAYOUT_MODE = 'big';
-        // one: one BIG eye
-        // big: a few huge eyes
-        // small: heaps of little eyes
         const humanFaceWidth = 0.20;
 
         const eyeColors = ['#a29bfe', '#74b9ff', '#ff7675', '#fab1a0', '#81ecec', '#55efc4'];
