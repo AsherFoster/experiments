@@ -9,29 +9,58 @@
         height: 100vh;
         width: 100vw;
       }
+      #app {
+        display: flex;
+      }
+      #app > div {
+        flex: 1
+      }
     </style>
   </head>
   <body>
+    <h1>Configure Eyes!</h1>
     <div id="app">
-      <h1>{{title}}</h1>
-      <p>ID: <input type="text" v-model="id"></p>
-      <p>Device is <input type="number" v-model="device.width"> x <input type="number" v-model="device.height">. DPI is {{dpi}}</p>
-      <p>Screen size: <input type="number" v-model="deviceInches"> inches</p>
-      <p>Camera FOV: <input type="number" v-model="fov"> degrees</p>
-      <button @click="save">Save Config</button>
-      <code>
-        {{config | json}}
-      </code>
-      <ul>
-        <li v-for="preset in presets"><a @click="applyConfig(preset)" href="#">{{preset.id}}</a></li>
-      </ul>
+      <div>
+        <h2>Device config</h2>
+        <p>ID: <input type="text" v-model="id"></p>
+        <p>Device is <input type="number" v-model="device.width"> x <input type="number" v-model="device.height">. DPI is {{dpi}}</p>
+        <p>Screen size: <input type="number" v-model="deviceInches"> inches</p>
+        <p>Camera FOV: <input type="number" v-model="fov"> degrees</p>
+        <button @click="saveConfig">Save Config</button>
+        <code>{{config | json}}</code>
+        <ul>
+          <li v-for="preset in presets"><a @click="applyConfig(preset)" href="#">{{preset.id}}</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2>Settings</h2>
+        <label for="layout-one">
+          <input id="layout-one" type="radio" value="one" v-model="layoutMode">
+          One Eye
+        </label>
+        <label for="layout-big">
+          <input id="layout-big" type="radio" value="big" v-model="layoutMode">
+          Big Eyes
+        </label>
+        <label for="layout-small">
+          <input id="layout-small" type="radio" value="small" v-model="layoutMode">
+          Small Eyes
+        </label>
+        <br>
+        <label for="debug-box">
+          <input id="debug-box" type="checkbox" v-model="debug">
+          Debug
+        </label>
+        <br>
+        <button @click="saveSettings">Save Settings</button>
+        <code>{{settings | json}}</code>
+      </div>
     </div>
     <script>
       (async () => {
         let app = new Vue({
           el: '#app',
           data: {
-            title: 'Configure Eyes!',
             id: 'new-device',
             deviceInches: 1,
             device: {
@@ -41,15 +70,20 @@
               physicalHeight: 1
             },
             fov: 50,
-            presets: []
+            presets: [],
+            layoutMode: 'big',
+            debug: false
           },
           methods: {
             handleResize() {
               this.device.width = document.body.offsetWidth;
               this.device.height = document.body.offsetHeight;
             },
-            save() {
+            saveConfig() {
               localStorage.setItem('eyes-config', JSON.stringify(this.config));
+            },
+            saveSettings() {
+              localStorage.setItem('eyes-settings', JSON.stringify(this.settings));
             },
             applyConfig(config) {
               this.fov = config.fov;
@@ -66,6 +100,12 @@
                 id: this.id,
                 dpi: this.dpi,
                 fov: this.fov,
+              }
+            },
+            settings() {
+              return {
+                layoutMode: this.layoutMode,
+                debug: this.debug
               }
             }
           },
@@ -86,6 +126,11 @@
           dpi: 80,
           fov: 50
         });
+        if(localStorage.getItem('eyes-settings')) {
+          let {layoutMode, debug} = JSON.parse(localStorage.getItem('eyes-settings'));
+          app.layoutMode = layoutMode;
+          app.debug = debug;
+        }
         window.addEventListener('resize', app.handleResize);
         let resp = await fetch('https://gist.githubusercontent.com/AsherFoster/d6476c97c9a68bd8a66f0224119b408b/raw/eyes-devices.json');
         app.presets = await resp.json();
