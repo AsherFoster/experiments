@@ -40,12 +40,12 @@
     <script src="assets/face_api.js"></script>
     <script>
       (async () => {
-        let DEBUG = true;
+        let DEBUG = false;
         let CONTROL_MODE = 'webcam';
         // stream: a image handled somewhere else
         // webcam: handle creating a webcam feed
         // mouse: just use the mouse
-        let LAYOUT_MODE = 'small';
+        let LAYOUT_MODE = 'big';
         // one: one BIG eye
         // big: a few huge eyes
         // small: heaps of little eyes
@@ -78,6 +78,9 @@
         let pupilRadius = 0;
         let highlightRadius = 0;
         let highlightOffset = 0;
+        let lastRender = performance.now();
+        let renderStart = performance.now();
+        let detectionTime = 0;
         let maxDistance = 100;
         let dest = {
           x: 0,
@@ -93,6 +96,10 @@
 
         // App fns
         function initLayout() {
+          if(!DEBUG) {
+            streamElement.style.visibility = 'hidden';
+            overlay.style.display = 'none';
+          }
           let docHeight = document.body.offsetHeight;
           let docWidth = document.body.offsetWidth;
           if(LAYOUT_MODE === 'one') {
@@ -193,10 +200,12 @@
 
         // Render fns
         function render() {
+          renderStart = performance.now();
           ctx.clearRect(0, 0, width, height);
           eyes.forEach(r => r.forEach(eye => renderEye(eye)));
           if(DEBUG) renderDebug();
-          requestAnimationFrame(render)
+          lastRender = performance.now();
+          requestAnimationFrame(render);
         }
         function renderEye({x: eyeX, y: eyeY, color}) {
           let deltaX = clamp(dest.x - eyeX, -maxDistance, maxDistance);
@@ -266,7 +275,9 @@
           Document: ${width} x ${height}
           DPI: ${dpi} (${pixelsPerMeter}px/m), display is ${pixelsPerMeter * width / 100}cm wide
           FOV: ${fovDeg} degrees
-          Using device config: ${configId}`
+          Using device config: ${configId}
+          FPS: ${Math.round(1 / ((performance.now() - lastRender) / 1000))} (${performance.now() - renderStart}ms)
+          Detection time: ${detectionTime}ms`
               .split('\n').forEach((l, i) => {
             ctx.fillText(l.trim(), streamElement.width || 10, (i + 1) * 20)
           })
@@ -274,6 +285,7 @@
 
         // Facial recognition!
         async function detect() {
+          let detectStart = performance.now();
           const detection = await faceapi.detectSingleFace(streamElement, detector);
           if (detection) {
             // console.log(detection.box)
@@ -286,6 +298,7 @@
           }
           if (detection)
             transformDetection(detection);
+          detectionTime = performance.now() - detectStart;
           setTimeout(detect, 0);
         }
         function transformDetection({box, imageHeight, imageWidth}) {
