@@ -26,8 +26,22 @@
         height: 10px;
         width: 10px;
         transition: all 0.3s;
-      }</style></head><body><video id="stream" width="200" height="150" preload autoplay loop muted></video><div 
-id="overlay"></div><canvas id="app"></canvas><script src="assets/face_api.js"></script><script>(async () => {
+      }
+      .iris, .pupil, .highlight {
+        transition: all .2s;
+      }</style><script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script></head><body><video id="stream" 
+width="200" height="150" preload autoplay loop muted></video><div id="overlay"></div><div id="app"><svg 
+xmlns="http://www.w3.org/2000/svg" version="1.1" :viewBox="`0 0 ${page.width} ${page.height}`" :width="page.width" 
+:height="page.height" style="position:absolute; top:0; left:0;"><clipPath id="eyeClip"><circle :cx="eyeRadius" 
+:cy="eyeRadius" :r="eyeRadius"></circle></clipPath><g v-for="row in eyes"><svg 
+:viewBox="`0 0 ${eyeRadius * 2} ${eyeRadius * 2}`" :width="eyeRadius * 2" :height="eyeRadius * 2" 
+:x="eye.x - eyeRadius" :y="eye.y - eyeRadius" v-for="eye in row"><g clip-path="url(#eyeClip)"><circle fill="white" 
+:cx="eyeRadius" :cy="eyeRadius" :r="eyeRadius"></circle><circle class="iris" :fill="eye.color" :cx="eyeRadius" 
+:cy="eyeRadius" :transform="`translate(${eye.iris[0]} ${eye.iris[1]})`" :r="irisRadius"></circle><circle class="pupil" 
+fill="black" :cx="eyeRadius" :cy="eyeRadius" :transform="`translate(${eye.pupil[0]} ${eye.pupil[1]})`" :r="pupilRadius">
+</circle><circle class="highlight" fill="white" :cx="eyeRadius" :cy="eyeRadius" 
+:transform="`translate(${eye.highlight[0]} ${eye.highlight[1]})`" :r="highlightRadius"></circle></g></svg></g></svg>
+</div><script src="assets/face_api.js"></script><script>(async () => {
         let {debug: DEBUG, layoutMode: LAYOUT_MODE} = localStorage.getItem('eyes-settings') ?
           JSON.parse(localStorage.getItem('eyes-settings')) :
           {debug: false, layoutMode: 'big'};
@@ -36,7 +50,7 @@ id="overlay"></div><canvas id="app"></canvas><script src="assets/face_api.js"></
         // stream: a image handled somewhere else
         // webcam: handle creating a webcam feed
         // mouse: just use the mouse
-        const humanFaceWidth = 0.20;
+        const humanFaceWidth = 0.17;
 
         const eyeColors = ['#a29bfe', '#74b9ff', '#ff7675', '#fab1a0', '#81ecec', '#55efc4'];
         const eyeMargin = 20;
@@ -59,71 +73,113 @@ id="overlay"></div><canvas id="app"></canvas><script src="assets/face_api.js"></
         let stream;
         let height = 0;
         let width = 0;
-        let eyes = [[]];
-        let eyeRadius = 0;
-        let irisRadius = 0;
-        let pupilRadius = 0;
-        let highlightRadius = 0;
-        let highlightOffset = 0;
-        let lastRender = performance.now();
-        let renderStart = performance.now();
         let detectionTime = 0;
         let maxDistance = 100;
-        let dest = {
-          x: 0,
-          y: 0,
-          z: 0
-        };
         let started = false;
 
-        let canvas = document.getElementById('app');
-        let ctx = canvas.getContext('2d');
-
-        window.addEventListener('resize', initLayout);
-
-        // App fns
-        function initLayout() {
-          if(!DEBUG) {
-            streamElement.style.visibility = 'hidden';
-            overlay.style.display = 'none';
-          }
-          let docHeight = document.body.offsetHeight;
-          let docWidth = document.body.offsetWidth;
-          if(LAYOUT_MODE === 'one') {
-            eyes = [[{
-              x: docWidth/2,
-              y: docHeight/2,
-              color: pickRandom(eyeColors)
-            }]];
-            eyeRadius = Math.min(docHeight, docWidth)/2 - eyeMargin * 2;
-          } else {
-            if(LAYOUT_MODE === 'big') eyeRadius = 200;
-            else eyeRadius = 60;
-            const nX = Math.floor((docWidth - eyeMargin) / (eyeRadius*2 + eyeMargin));
-            const nY = Math.floor((docHeight - eyeMargin) / (eyeRadius*2 + eyeMargin));
-            const docMarginX = (docWidth - (nX * (eyeRadius*2 + eyeMargin) - eyeMargin)) / 2; // Subtract the rendered area from doc size, then half
-            const docMarginY = (docHeight - (nY * (eyeRadius*2 + eyeMargin) - eyeMargin)) / 2;
-            for(let y = 0; y < nY; y++) {
-              eyes[y] = [];
-              for(let x = 0; x < nX; x++) {
-                eyes[y][x] = {
-                  x: docMarginX + eyeRadius + x * (2 * eyeRadius + eyeMargin),
-                  y: docMarginY + eyeRadius + y * (2 * eyeRadius + eyeMargin),
+        // This just became a vue app. Hell yeah.
+        const app = new Vue({
+          el: '#app',
+          data: {
+            eyeRadius: 1,
+            eyeData: [[]],
+            irisRadius: 1,
+            pupilRadius: 1,
+            highlightRadius: 1,
+            highlightOffset: 1,
+            dest: {
+              x: 0,
+              y: 0,
+              z: 0
+            },
+            page: {
+              width: 1,
+              height: 1
+            }
+          },
+          computed: {
+            eyes() {
+              return this.eyeData.map(r => r.map(eye => this.calcEye(eye)))
+            }
+          },
+          methods: {
+            calcLayout() {
+              if(!DEBUG) { // TODO fix
+                streamElement.style.visibility = 'hidden';
+                overlay.style.display = 'none';
+              }
+              let docHeight = document.body.offsetHeight;
+              let docWidth = document.body.offsetWidth;
+              if(LAYOUT_MODE === 'one') {
+                Vue.set(this.eyeData, 0, [{
+                  x: docWidth/2,
+                  y: docHeight/2,
                   color: pickRandom(eyeColors)
+                }]);
+                this.eyeRadius = Math.min(docHeight, docWidth)/2 - eyeMargin * 2;
+              } else {
+                if(LAYOUT_MODE === 'big') this.eyeRadius = 200;
+                else this.eyeRadius = 60;
+                const nX = Math.floor((docWidth - eyeMargin) / (this.eyeRadius*2 + eyeMargin));
+                const nY = Math.floor((docHeight - eyeMargin) / (this.eyeRadius*2 + eyeMargin));
+                const docMarginX = (docWidth - (nX * (this.eyeRadius*2 + eyeMargin) - eyeMargin)) / 2; // Subtract the rendered area from doc size, then half
+                const docMarginY = (docHeight - (nY * (this.eyeRadius*2 + eyeMargin) - eyeMargin)) / 2;
+                for(let y = 0; y < nY; y++) {
+                  Vue.set(this.eyeData, y, []);
+                  for(let x = 0; x < nX; x++) {
+                    Vue.set(this.eyeData[y], x, {
+                      x: docMarginX + this.eyeRadius + x * (2 * this.eyeRadius + eyeMargin),
+                      y: docMarginY + this.eyeRadius + y * (2 * this.eyeRadius + eyeMargin),
+                      color: pickRandom(eyeColors)
+                    });
+                  }
                 }
+              }
+              this.irisRadius = irisRadiusFactor * this.eyeRadius;
+              this.pupilRadius = pupilRadiusFactor * this.eyeRadius;
+              this.highlightRadius = highlightRadiusFactor * this.eyeRadius;
+              this.highlightOffset = highlightOffsetFactor * this.eyeRadius;
+
+              maxDistance = maxDistanceFactor  * this.eyeRadius;
+
+              this.page.height = height = docHeight;
+              this.page.width = width = docWidth;
+            },
+            calcEye({x: eyeX, y: eyeY, color}) {
+              let deltaX = clamp(this.dest.x - eyeX, -maxDistance, maxDistance);
+              let deltaY = clamp(this.dest.y - eyeY, -maxDistance, maxDistance);
+
+              let distX = pythagoras(deltaX, this.dest.z);
+              let distY = pythagoras(deltaY, this.dest.z);
+              let ratioX = (this.eyeRadius / 1.2) / distX;
+              let ratioY = (this.eyeRadius / 1.2) / distY;
+
+              let offsetX = deltaX * ratioX;
+              let offsetY = deltaY * ratioY;
+
+              // TODO Clipping
+              return {
+                x: eyeX,
+                y: eyeY,
+                color,
+                iris: [
+                  round(offsetX, 3),
+                  round(offsetY, 3)
+                ],
+                pupil: [
+                  round(offsetX * 1.15, 3),
+                  round(offsetY * 1.15, 3)
+                ],
+                highlight: [
+                  round((offsetX * 1.2) + this.highlightOffset, 3),
+                  round((offsetY * 1.2) - this.highlightOffset, 3)
+                ]
               }
             }
           }
-          irisRadius = irisRadiusFactor * eyeRadius;
-          pupilRadius = pupilRadiusFactor * eyeRadius;
-          highlightRadius = highlightRadiusFactor * eyeRadius;
-          highlightOffset = highlightOffsetFactor * eyeRadius;
+        });
 
-          maxDistance = maxDistanceFactor  * eyeRadius;
-
-          height = canvas.height = docHeight;
-          width = canvas.width = docWidth;
-        }
+        // App fns
         function initControl() {
           switch (CONTROL_MODE) {
             case 'mouse':
@@ -169,9 +225,9 @@ id="overlay"></div><canvas id="app"></canvas><script src="assets/face_api.js"></
           detect();
         }
         function mouseEvent(e) {
-          dest.x = e.pageX;
-          dest.y = e.pageY;
-          dest.z = mouseDepth;
+          app.dest.x = e.pageX;
+          app.dest.y = e.pageY;
+          app.dest.z = mouseDepth;
         }
 
         // Generic Utils
@@ -184,91 +240,24 @@ id="overlay"></div><canvas id="app"></canvas><script src="assets/face_api.js"></
         function clamp(val, min, max) {
           return Math.min(max, Math.max(min, val));
         }
+        function round(val, dp) {
+          return Math.round(val * (10 ** dp)) / (10 ** dp);
+        }
 
         // Render fns
-        function render() {
-          renderStart = performance.now();
-          ctx.clearRect(0, 0, width, height);
-          eyes.forEach(r => r.forEach(eye => renderEye(eye)));
-          if(DEBUG) renderDebug();
-          lastRender = performance.now();
-          requestAnimationFrame(render);
-        }
-        function renderEye({x: eyeX, y: eyeY, color}) {
-          let deltaX = clamp(dest.x - eyeX, -maxDistance, maxDistance);
-          let deltaY = clamp(dest.y - eyeY, -maxDistance, maxDistance);
-
-          let distX = pythagoras(deltaX, dest.z);
-          let distY = pythagoras(deltaY, dest.z);
-          let ratioX = (eyeRadius / 1.2) / distX;
-          let ratioY = (eyeRadius / 1.2) / distY;
-
-          let offsetX = deltaX * ratioX;
-          let offsetY = deltaY * ratioY;
-          // console.log(ratioX, ratioY);
-
-          // clip to eye area
-          ctx.save();
-          ctx.beginPath();
-          ctx.ellipse(eyeX, eyeY, eyeRadius, eyeRadius, 0, 0, 2 * Math.PI);
-          ctx.clip();
-
-          // eye
-          ctx.fillStyle = 'white';
-          ctx.beginPath();
-          ctx.ellipse(eyeX, eyeY, eyeRadius, eyeRadius, 0, 0, 2 * Math.PI);
-          ctx.fill();
-
-          // iris
-          ctx.fillStyle = color;
-          ctx.beginPath();
-          ctx.ellipse(eyeX + offsetX, eyeY + offsetY,
-            irisRadius - Math.abs(offsetX * eyeRadius / 4000), // width
-            irisRadius - Math.abs(offsetY * eyeRadius / 4000), // height
-            0, 0, 2 * Math.PI);
-          ctx.fill();
-
-          // pupil
-          ctx.fillStyle = 'black';
-          ctx.beginPath();
-          ctx.ellipse(eyeX + (offsetX * 1.15), eyeY + (offsetY * 1.15),
-            pupilRadius - Math.abs(offsetX * eyeRadius / 3000), // width
-            pupilRadius - Math.abs(offsetY * eyeRadius / 3000), // height
-            0, 0, 2 * Math.PI);
-          ctx.fill();
-
-          // highlight
-          ctx.fillStyle = 'white';
-          ctx.beginPath();
-          ctx.ellipse(eyeX + (offsetX * 1.2) + highlightOffset, eyeY + (offsetY * 1.2) - highlightOffset, highlightRadius, highlightRadius, 0, 0, 2 * Math.PI);
-          ctx.fill();
-
-          ctx.restore();
-
-          if(DEBUG) {
-            dot(eyeX, eyeY);
-            dot(eyeX + offsetX, eyeY + offsetY, 2, '#F00')
-          }
-        }
-        function dot(x, y, size = 2, color = '#00F') {
-          ctx.fillStyle = color;
-          ctx.beginPath();
-          ctx.ellipse(x, y, size, size, 0, 0, 2 * Math.PI);
-          ctx.fill();
-        }
-        function renderDebug() {
-          dot(dest.x, dest.y, 5);
-          `Dest: ${Math.round(dest.x)}, ${Math.round(dest.y)}, ${Math.round(dest.z)}
-          Document: ${width} x ${height}
-          DPI: ${dpi} (${pixelsPerMeter}px/m), display is ${pixelsPerMeter * width / 100}cm wide
-          FOV: ${fovDeg} degrees
-          Using device config: ${configId}
-          FPS: ${Math.round(1 / ((performance.now() - lastRender) / 1000))} (${performance.now() - renderStart}ms)
-          Detection time: ${detectionTime}ms`
-              .split('\n').forEach((l, i) => {
-            ctx.fillText(l.trim(), streamElement.width || 10, (i + 1) * 20)
-          })
-        }
+        // function renderDebug() {
+        //   dot(dest.x, dest.y, 5);
+        //   `Dest: ${Math.round(dest.x)}, ${Math.round(dest.y)}, ${Math.round(dest.z)}
+        //   Document: ${width} x ${height}
+        //   DPI: ${dpi} (${pixelsPerMeter}px/m), display is ${pixelsPerMeter * width / 100}cm wide
+        //   FOV: ${fovDeg} degrees
+        //   Using device config: ${configId}
+        //   FPS: ${Math.round(1 / ((performance.now() - lastRender) / 1000))} (${performance.now() - renderStart}ms)
+        //   Detection time: ${detectionTime}ms`
+        //       .split('\n').forEach((l, i) => {
+        //     ctx.fillText(l.trim(), streamElement.width || 10, (i + 1) * 20)
+        //   })
+        // }
 
         // Facial recognition!
         async function detect() {
@@ -289,9 +278,6 @@ id="overlay"></div><canvas id="app"></canvas><script src="assets/face_api.js"></
           setTimeout(detect, 0);
         }
         function transformDetection({box, imageHeight, imageWidth}) {
-          // Shift above screen
-          // Scale with width/distance
-          // (de)amplify movement
           let boxY = box.y + box.height/2;
           let boxX = box.x + box.width/2;
           let boxCenteredX = -(boxX - imageWidth/2);
@@ -304,23 +290,14 @@ id="overlay"></div><canvas id="app"></canvas><script src="assets/face_api.js"></
 
           let fromCenterX = boxCenteredX * 4;
           let fromCenterY = boxCenteredY * 4;
-          // console.log(fromCenterX, fromCenterY);
-          // let scaleX = width / streamElement.videoWidth;
-          // let scaleY = height / streamElement.videoHeight;
-          // let boxCenterX = boxX + box.width / 2;
-          // let boxCenterY = boxY + box.height / 2;
-          // let scaledX = width - (scaleX * boxCenterX); // Flip position, mirror webcam
-          // let scaledY = boxCenterY * scaleY;
-          // let fromCenterX = scaledX - width / 2;
-          // let fromCenterY = scaledY - height / 2;
-          dest = {
-            x: fromCenterX + width/2,
-            y: fromCenterY,
-            z: distancePx
-          };
+
+          app.dest.x = fromCenterX + width/2;
+          app.dest.y = fromCenterY;
+          app.dest.z = distancePx;
         }
 
-        initLayout();
-        render();
+        app.calcLayout();
         initControl();
+
+        window.addEventListener('resize', app.calcLayout);
       })();</script></body></html>
