@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Fadey Hero</title>
+    <link href="https://fonts.googleapis.com/css?family=Nunito+Sans:400,400i,600,700|Material+Icons&display=swap" rel="stylesheet">
+    <style>
+      html, body {
+        font-family: "Nunito Sans", Arial, sans-serif;
+        margin: 0;
+      }
+      * {
+        position: relative;
+      }
+      .button {
+        margin: 6px 0;
+        display: inline-block;
+        padding: 8px;
+        font-size: 18px;
+        color: #fff;
+        border-radius: 8px;
+        background: #FF4081;
+        text-decoration: none;
+      }
+      .button::after {
+        font-family: 'Material Icons',sans-serif;
+        content: 'keyboard_arrow_right';
+        font-size: 18px;
+        position: relative;
+        top: 3px;
+      }
+      .hero-wrapper {
+        height: 100vh;
+        display: flex;
+        align-items: center;
+      }
+      .hero-text {
+        flex: 1;
+        margin: 6em;
+      }
+      h1 {
+        font-size: 60px;
+        margin: 0;
+      }
+      .hero-text p {
+        margin: 0;
+        max-width: 350px;
+        font-size: 24px;
+      }
+      .hero-image {
+        flex: 1;
+      }
+      .fader-item {
+      }
+      .fader-img-wrapper {
+        height: 400px;
+      }
+      .fader-img {
+        position: absolute;
+        transition: opacity 0.5s;
+        opacity: 0;
+      }
+      .fader-caption {
+        box-shadow: 0 0 20px 0 rgba(0,0,0,0.4);
+        border-radius: 16px;
+        padding: 8px 12px;
+        color: #444;
+        position: absolute;
+        bottom: 50px;
+        left: 70px;
+        background: white;
+        display: inline-block;
+        z-index: 1;
+        transition: opacity 0.5s;
+        opacity: 0;
+      }
+      .fader-caption h3 {
+        margin: 0;
+        font-weight: 400;
+        font-size: 24px;
+      }
+      .fader-caption p {
+        margin: 0;
+      }
+      .accent-background {
+        position: absolute;
+        bottom: 0;
+        border-style: solid;
+        border-width: 0 0 200px 100vw;
+        border-color: transparent transparent #E3F2FD transparent;
+        z-index: -1;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="hero-wrapper">
+      <div class="hero-text">
+        <h1>Asher Foster</h1>
+        <p>Full stack web platform developer</p>
+        <a class="button" href="#">portfolio</a>
+      </div>
+      <div class="hero-image">
+        <div class="fader-item">
+          <div class="fader-img-wrapper">
+            <img class="fader-img" src="assets/arrow-img-1.png">
+            <img class="fader-img" src="assets/arrow-img-2.png">
+            <img class="fader-img" src="assets/arrow-img-3.png">
+          </div>
+          <div class="fader-caption">
+            <h3>constellation</h3>
+            <p>brand development and packaging design</p>
+          </div>
+          <div class="fader-caption">
+            <h3>developster</h3>
+            <p>empowering young entrepreneurs to create</p>
+          </div>
+          <div class="fader-caption">
+            <h3>canal</h3>
+            <p>innovative solution for managing bot features</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="accent-background"></div>
+    <script>
+
+      (function () {
+        const images = document.getElementsByClassName('fader-img');
+        const captions = document.getElementsByClassName('fader-caption');
+        let items = [].slice.call(images).map((img, i) => [img, captions[i]]);
+        let active = 0;
+        if(!items || !items.length) return;
+
+        function setItem(set, val) {
+          set.forEach(item => {
+            item.style.opacity = val;
+            item.style.zIndex = val;
+          })
+        }
+        setItem(items[0], 1);
+        setInterval(() => {
+          setItem(items[active], 0);
+          active = (active + 1) % items.length;
+          setItem(items[active], 1);
+        }, 3000);
+      })()
+    </script>
+  </body>
+</html>
