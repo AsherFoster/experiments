@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1">
+    <title>Swirly Whirly</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            width: 100vw;
+            background: #333;
+            overflow: hidden;
+        }
+        #canvas {
+            position: relative;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <script>
+        (() => {
+            const size = 20;
+            const padding = 10;
+            const rotationFactor = 2;
+
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            let height, width;
+            let rows, cols;
+            let mouseX = -Infinity, mouseY = -Infinity; // Just stick it offscreen initially
+            let maxDist;
+            function render() {
+                ctx.clearRect(0, 0, width, height);
+                ctx.fillStyle = '#b35a24';
+                for (let row = 0; row < rows; row++) {
+                    let y = padding + (size + padding) * row;
+                    for (let col = 0; col < cols; col++) {
+                        let x = padding + (size + padding) * col;
+                        let dist = Math.sqrt((width - x) ** 2 + (height - y) ** 2);
+                        let rot = rotationFactor - (rotationFactor * Math.log(dist)/Math.log(width));
+                        let mouseDist = Math.min(Math.sqrt((mouseX - x) ** 2 + (mouseY - y) ** 2), 200);
+                        rot += mouseDist / 400 - 0.5;
+                        ctx.beginPath();
+                        ctx.translate(x, y);
+                        ctx.rotate(Math.PI * rot);
+                        ctx.fillRect(0, 0, size, size/10);
+                        ctx.fill();
+                        ctx.rotate(Math.PI * -rot);
+                        ctx.translate(-x, -y);
+                    }
+                }
+                requestAnimationFrame(render)
+            }
+            function calcLayout() {
+                let docHeight = document.body.clientHeight;
+                let docWidth = document.body.clientWidth;
+                rows = Math.ceil(docHeight / (padding + size));
+                cols = Math.ceil(docWidth / (padding + size)) + 1;
+                height = canvas.height = rows * (size + padding);
+                width = canvas.width = cols * (size + padding);
+                canvas.style.left = (docWidth - width) / 2 + 'px';
+                canvas.style.top = (docHeight - height) / 2 + 'px';
+
+                maxDist = Math.sqrt(width ** 2 + height ** 2);
+
+                console.log('Layout calc: w*h:', docWidth, docHeight, ' -- r*c: ', rows, cols);
+            }
+            function mouseMove(e) {
+                mouseX = e.pageX;
+                mouseY = e.pageY;
+            }
+            window.addEventListener('resize', calcLayout);
+            window.addEventListener('mousemove', mouseMove);
+            calcLayout();
+            render();
+        })();
+    </script>
+</body>
+</html>
