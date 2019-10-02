@@ -13,6 +13,8 @@
             overflow: hidden;
         }
         #canvas {
+            height: 100%;
+            width: 100%;
             position: relative;
         }
     </style>
@@ -21,60 +23,82 @@
     <canvas id="canvas"></canvas>
     <script>
         (() => {
-            const size = 20;
-            const padding = 10;
-            const rotationFactor = 2;
+            function swirly({
+                    el: canvas,
+                    color = '#000',
+                    mouseInteraction = false,
+                    size = 20,
+                    padding = 10
+            }) {
+                const rotationFactor = 2;
+                const ctx = canvas.getContext('2d');
 
-            const canvas = document.getElementById('canvas');
-            const ctx = canvas.getContext('2d');
-            let height, width;
-            let rows, cols;
-            let mouseX = -Infinity, mouseY = -Infinity; // Just stick it offscreen initially
-            let maxDist;
-            function render() {
-                ctx.clearRect(0, 0, width, height);
-                ctx.fillStyle = '#b35a24';
-                for (let row = 0; row < rows; row++) {
-                    let y = padding + (size + padding) * row;
-                    for (let col = 0; col < cols; col++) {
-                        let x = padding + (size + padding) * col;
-                        let dist = Math.sqrt((width - x) ** 2 + (height - y) ** 2);
-                        let rot = rotationFactor - (rotationFactor * Math.log(dist)/Math.log(width));
-                        let mouseDist = Math.min(Math.sqrt((mouseX - x) ** 2 + (mouseY - y) ** 2), 200);
-                        rot += mouseDist / 400 - 0.5;
-                        ctx.beginPath();
-                        ctx.translate(x, y);
-                        ctx.rotate(Math.PI * rot);
-                        ctx.fillRect(0, 0, size, size/10);
-                        ctx.fill();
-                        ctx.rotate(Math.PI * -rot);
-                        ctx.translate(-x, -y);
+                let height, width;
+                let rows, cols;
+                let offsetX, offsetY;
+                let mouseX = -Infinity, mouseY = -Infinity; // Just stick it offscreen initially
+                let maxDist;
+
+                function render() {
+                    ctx.clearRect(0, 0, width, height);
+                    ctx.fillStyle = color;
+
+                    for (let row = 0; row < rows; row++) {
+                        let y = padding + (size + padding) * row;
+                        for (let col = 0; col < cols; col++) {
+                            let x = padding + (size + padding) * col;
+                            renderLine(x + offsetX, y + offsetY);
+                        }
                     }
                 }
-                requestAnimationFrame(render)
-            }
-            function calcLayout() {
-                let docHeight = document.body.clientHeight;
-                let docWidth = document.body.clientWidth;
-                rows = Math.ceil(docHeight / (padding + size));
-                cols = Math.ceil(docWidth / (padding + size)) + 1;
-                height = canvas.height = rows * (size + padding);
-                width = canvas.width = cols * (size + padding);
-                canvas.style.left = (docWidth - width) / 2 + 'px';
-                canvas.style.top = (docHeight - height) / 2 + 'px';
+                function renderLine(x, y) {
+                    let dist = Math.max(Math.sqrt((width - x) ** 2 + (height - y) ** 2) - 100, 30);
+                    let rot = rotationFactor - (rotationFactor * Math.log(dist)/Math.log(width));
+                    if (mouseInteraction) {
+                        let mouseDist = Math.min(Math.sqrt((mouseX - x) ** 2 + (mouseY - y) ** 2), 200);
+                        rot += mouseDist / 400 - 0.5;
+                    }
+                    ctx.beginPath();
+                    ctx.translate(x, y);
+                    ctx.rotate(Math.PI * rot);
+                    ctx.fillRect(0, 0, size, size/10);
+                    ctx.fill();
+                    ctx.rotate(Math.PI * -rot);
+                    ctx.translate(-x, -y);
+                }
+                function calcLayout() {
+                    // The canvas size should be it's visual size
+                    let docHeight = canvas.height = canvas.offsetHeight;
+                    let docWidth = canvas.width = canvas.offsetWidth;
+                    rows = Math.ceil(docHeight / (padding + size));
+                    cols = Math.ceil(docWidth / (padding + size)) + 1;
+                    height = rows * (size + padding);
+                    width = cols * (size + padding);
+                    offsetX = (docWidth - width) / 2;
+                    offsetY = (docHeight - height) / 2;
 
-                maxDist = Math.sqrt(width ** 2 + height ** 2);
+                    maxDist = Math.sqrt(width ** 2 + height ** 2);
 
-                console.log('Layout calc: w*h:', docWidth, docHeight, ' -- r*c: ', rows, cols);
+                    render();
+                }
+
+                window.addEventListener('resize', calcLayout);
+                if (mouseInteraction) {
+                    window.addEventListener('mousemove', e => {
+                        mouseX = e.pageX;
+                        mouseY = e.pageY;
+                        requestAnimationFrame(render);
+                    });
+                }
+
+
+                calcLayout();
+                render();
             }
-            function mouseMove(e) {
-                mouseX = e.pageX;
-                mouseY = e.pageY;
-            }
-            window.addEventListener('resize', calcLayout);
-            window.addEventListener('mousemove', mouseMove);
-            calcLayout();
-            render();
+            swirly({
+                el: document.getElementById('canvas'),
+                color: '#b35a24'
+            })
         })();
     </script>
 </body>
