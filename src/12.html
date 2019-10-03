@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1">
+    <title>Swirly Whirly</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            width: 100vw;
+            background: #222;
+            overflow: hidden;
+        }
+        #canvas {
+            height: 100%;
+            width: 100%;
+            position: relative;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <script>
+        (() => {
+            function swirly({
+                    el: canvas,
+                    color = '#000',
+                    mouseInteraction = false,
+                    size = 25,
+                    padding = 15
+            }) {
+                const rotationFactor = 2;
+                const ctx = canvas.getContext('2d');
+
+                let height, width;
+                let rows, cols;
+                let offsetX, offsetY;
+                let mouseX = -Infinity, mouseY = -Infinity; // Just stick it offscreen initially
+                let maxDist;
+
+                function render() {
+                    ctx.clearRect(0, 0, width, height);
+                    ctx.fillStyle = color;
+
+                    for (let row = 0; row < rows; row++) {
+                        let y = padding + (size + padding) * row;
+                        for (let col = 0; col < cols; col++) {
+                            let x = padding + (size + padding) * col;
+                            renderLine(x + offsetX, y + offsetY);
+                        }
+                    }
+                }
+                function renderLine(x, y) {
+                    let dist = Math.max(Math.sqrt((width - x) ** 2 + (height - y) ** 2) - 100, 30);
+                    let rot = rotationFactor - (rotationFactor * Math.log(dist)/Math.log(width));
+                    if (mouseInteraction) {
+                        let mouseDist = Math.min(Math.sqrt((mouseX - x) ** 2 + (mouseY - y) ** 2), 200);
+                        rot += mouseDist / 400 - 0.5;
+                    }
+                    ctx.beginPath();
+                    ctx.translate(x, y);
+                    ctx.rotate(Math.PI * rot);
+                    ctx.fillRect(0, 0, size, size/10);
+                    ctx.fill();
+                    ctx.rotate(Math.PI * -rot);
+                    ctx.translate(-x, -y);
+                }
+                function calcLayout() {
+                    // The canvas size should be it's visual size
+                    let docHeight = canvas.height = canvas.offsetHeight;
+                    let docWidth = canvas.width = canvas.offsetWidth;
+                    rows = Math.ceil(docHeight / (padding + size));
+                    cols = Math.ceil(docWidth / (padding + size)) + 1;
+                    height = rows * (size + padding);
+                    width = cols * (size + padding);
+                    offsetX = (docWidth - width) / 2;
+                    offsetY = (docHeight - height) / 2;
+
+                    maxDist = Math.sqrt(width ** 2 + height ** 2);
+
+                    render();
+                }
+
+                window.addEventListener('resize', calcLayout);
+                if (mouseInteraction) {
+                    window.addEventListener('mousemove', e => {
+                        mouseX = e.pageX;
+                        mouseY = e.pageY;
+                        requestAnimationFrame(render);
+                    });
+                }
+
+
+                calcLayout();
+                render();
+            }
+            swirly({
+                el: document.getElementById('canvas'),
+                color: '#b35a24',
+                mouseInteraction: true
+            })
+        })();
+    </script>
+</body>
+</html>
