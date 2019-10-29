@@ -49,11 +49,13 @@ href="https://fonts.googleapis.com/css?family=Roboto+Mono:300,400&display=swap" 
       height: 100vh;
     }</style></head><body><div id="loading"><canvas id="canvas"></canvas><div id="bar"><div class="side" id="countdown">
 loading</div><span class="flex"></span><div class="main-text">broadcast incoming</div><span class="flex"></span><div 
-class="side"></div></div></div><iframe id="video" 
-src="http://www.youtube.com/embed/dQw4w9WgXcQ?enablejsapi=1&origin=http://localhost:5000"></iframe><script 
-src="https://www.youtube.com/iframe_api" defer="defer" async></script><script type="application/javascript">
+class="side"></div></div></div><iframe id="video"></iframe><script src="https://www.youtube.com/iframe_api" 
+defer="defer" async></script><script type="application/javascript">
 // Handles loading and starting the <Insert witty thing here>    (function () {
       let player;
+      const videoEl = document.getElementById('video');
+      videoEl.src = 'http://www.youtube.com/embed/dQw4w9WgXcQ?enablejsapi=1&origin=' + window.location.origin;
+
       window.countdownComplete = function () {
         console.log('Countdown complete, playing');
         player.playVideo();
@@ -71,14 +73,13 @@ src="https://www.youtube.com/iframe_api" defer="defer" async></script><script ty
       };
 
       // 4. The API will call this function when the video player is ready.
-      function onPlayerReady(event) {
+      function onPlayerReady() {
         console.log('Player Ready');
         player.playVideo();
         player.pauseVideo();
         // player.setLoop(true);
       }
-
-    })(window);
+    })();
 
     // This IIFE handles the loading screen. Calls window.countdownComplete after a bit, and hides itself
     (function () {
@@ -157,4 +158,5 @@ src="https://www.youtube.com/iframe_api" defer="defer" async></script><script ty
       intervals.push(setInterval(updateCountdown, 0));
       layout();
       render();
-    })();</script></body></html>
+    })();</script><script type="text/javascript" 
+src="https://www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js"></script></body></html>
