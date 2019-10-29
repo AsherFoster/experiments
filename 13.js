@@ -2,7 +2,7 @@
 (function () {
   let player;
   const videoEl = document.getElementById('video');
-  videoEl.src = 'http://www.youtube.com/embed/dQw4w9WgXcQ?enablejsapi=1&origin=' + window.location.origin;
+  videoEl.src = 'https://www.youtube.com/embed/dQw4w9WgXcQ?enablejsapi=1&origin=' + window.location.origin;
 
   window.countdownComplete = function () {
     console.log('Countdown complete, playing');
