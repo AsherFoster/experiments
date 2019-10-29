@@ -22,9 +22,10 @@ function html() {
 
 function js() {
   return src(['src/**/*.js', '!src/assets/**/*'], {base: 'src'})
-    .pipe(babel({
-      presets: ['@babel/preset-env', 'minify']
-    }))
+    // I can't be bothered with this shit
+    // .pipe(babel({
+    //   presets: ['@babel/preset-env', 'minify']
+    // }))
     .pipe(dest(OUTPUT_DIR))
 }
 
