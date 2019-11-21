@@ -55,18 +55,24 @@ rel="stylesheet"><style>html, body {
         transition: opacity 0.5s;
         opacity: 0;
       }
+      .fader-caption.entered {
+        bottom: 50px;
+      }
+      .fader-caption.on-leave {
+        bottom: 20px;
+      }
       .fader-caption {
         box-shadow: 0 0 20px 0 rgba(0,0,0,0.4);
         border-radius: 16px;
         padding: 8px 12px;
         color: #444;
         position: absolute;
-        bottom: 50px;
-        left: 70px;
+        bottom: 80px;
+        left: 80px;
         background: white;
         display: inline-block;
         z-index: 1;
-        transition: opacity 0.5s;
+        transition: opacity 0.4s ease-in, bottom 0.5s ease-out;
         opacity: 0;
       }
       .fader-caption h3 {
@@ -85,14 +91,13 @@ rel="stylesheet"><style>html, body {
         border-color: transparent transparent #E3F2FD transparent;
         z-index: -1;
       }</style></head><body><div class="hero-wrapper"><div class="hero-text"><h1>Asher Foster</h1><p>
-Full stack web platform developer</p><a class="button" href="#">portfolio</a></div><div class="hero-image"><div 
-class="fader-item"><div class="fader-img-wrapper"><img class="fader-img" src="assets/arrow-img-1.png"> <img 
+Full stack web platform developer</p><a class="button" href="/portfolio">portfolio</a></div><div class="hero-image"><div
+ class="fader-item"><div class="fader-img-wrapper"><img class="fader-img" src="assets/arrow-img-1.png"> <img 
 class="fader-img" src="assets/arrow-img-2.png"> <img class="fader-img" src="assets/arrow-img-3.png"></div><div 
 class="fader-caption"><h3>constellation</h3><p>brand development and packaging design</p></div><div 
-class="fader-caption"><h3>developster</h3><p>empowering young entrepreneurs to create</p></div><div 
-class="fader-caption"><h3>canal</h3><p>innovative solution for managing bot features</p></div></div></div></div><div 
-class="accent-background"></div><script>(function () {
-        const images = document.getElementsByClassName('fader-img');
+class="fader-caption"><h3>developster</h3><p>technical lead and cofounder</p></div><div class="fader-caption"><h3>canal
+</h3><p>lead developer and founder</p></div></div></div></div><div class="accent-background"></div><script>
+(function () {        const images = document.getElementsByClassName('fader-img');
         const captions = document.getElementsByClassName('fader-caption');
         let items = [].slice.call(images).map((img, i) => [img, captions[i]]);
         let active = 0;
@@ -100,8 +105,16 @@ class="accent-background"></div><script>(function () {
 
         function setItem(set, val) {
           set.forEach(item => {
+            if (val) item.classList.add('entered');
+            if (!val) {
+              item.classList.remove('entered');
+              item.classList.add('on-leave')
+            }
             item.style.opacity = val;
             item.style.zIndex = val;
+            if (!val) setTimeout(() => {
+              item.classList.remove('on-leave');
+            }, 500);
           })
         }
         setItem(items[0], 1);
@@ -109,5 +122,5 @@ class="accent-background"></div><script>(function () {
           setItem(items[active], 0);
           active = (active + 1) % items.length;
           setItem(items[active], 1);
-        }, 3000);
+        }, 4000);
       })()</script></body></html>
